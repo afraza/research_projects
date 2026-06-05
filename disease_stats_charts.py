@@ -18,12 +18,31 @@ df = pd.read_excel(excel_file, sheet_name=sheet_name)
 # -----------------------------
 df[disease_column] = df[disease_column].astype(str).str.strip()
 
-# Remove empty, missing, or invalid disease values
+invalid_disease_values = {
+    "",
+    "-",
+    "--",
+    "---",
+    "nan",
+    "none",
+    "null",
+    "n/a",
+    "na",
+}
+
 df = df[
     df[disease_column].notna()
-    & (df[disease_column] != "")
-    & (df[disease_column].str.lower() != "nan")
-]
+    & (~df[disease_column].str.lower().isin(invalid_disease_values))
+].copy()
+
+# Make disease names consistent:
+# "Breast Cancer" and "Breast cancer" -> "Breast Cancer"
+# "Colorectal Cancer" and "Colorectal cancer" -> "Colorectal Cancer"
+df[disease_column] = df[disease_column].str.lower().str.title()
+
+df[disease_column] = df[disease_column].replace({
+    "Covid-19": "COVID-19",
+})
 
 # -----------------------------
 # Count top 15 diseases
