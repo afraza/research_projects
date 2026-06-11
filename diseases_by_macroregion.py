@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
+import math
 
 # -----------------------------
 # Settings
@@ -8,7 +9,7 @@ from pathlib import Path
 excel_file = "scientific_projects_iran.xlsx"  # change this
 sheet_name = 0
 disease_column = "disease"
-tier_column = "university-tier"
+macroregion_column = "macroregion"
 
 # -----------------------------
 # Load data
@@ -37,35 +38,41 @@ df = df[
     & (~df[disease_column].str.lower().isin(invalid_disease_values))
 ].copy()
 
-# Normalize disease names:
-# Breast Cancer + Breast cancer -> Breast Cancer
-# Colorectal Cancer + Colorectal cancer -> Colorectal Cancer
+# Normalize disease names
 df[disease_column] = df[disease_column].str.lower().str.title()
 
-# Preserve special disease names if needed
+# Preserve special disease names
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
 })
 
 # -----------------------------
-# Clean tier field
+# Clean macroregion field
 # -----------------------------
-df[tier_column] = pd.to_numeric(df[tier_column], errors="coerce")
-df = df[df[tier_column].isin([0, 1, 2, 3])].copy()
-df[tier_column] = df[tier_column].astype(int)
+df[macroregion_column] = df[macroregion_column].astype(str).str.strip()
+
+df = df[
+    df[macroregion_column].notna()
+    & (df[macroregion_column] != "")
+    & (df[macroregion_column].str.lower() != "nan")
+].copy()
+
+macroregions = sorted(df[macroregion_column].unique())
 
 # -----------------------------
-# Create top 10 disease chart for each tier
+# Create top 10 disease chart for each macroregion
 # -----------------------------
-tiers = [0, 1, 2, 3]
+n_regions = len(macroregions)
+cols = 2
+rows = math.ceil(n_regions / cols)
 
-fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+fig, axes = plt.subplots(rows, cols, figsize=(18, rows * 5))
 axes = axes.flatten()
 
-for ax, tier in zip(axes, tiers):
-    tier_data = df[df[tier_column] == tier]
+for ax, macroregion in zip(axes, macroregions):
+    region_data = df[df[macroregion_column] == macroregion]
 
-    top_10 = tier_data[disease_column].value_counts().head(10)
+    top_10 = region_data[disease_column].value_counts().head(10)
 
     top_10.sort_values().plot(
         kind="barh",
@@ -73,9 +80,13 @@ for ax, tier in zip(axes, tiers):
         color="#3A7CA5"
     )
 
-    ax.set_title(f"Top 10 Diseases - University Tier {tier}")
+    ax.set_title(f"Top 10 Diseases - Macroregion {macroregion}")
     ax.set_xlabel("Number of Records")
     ax.set_ylabel("Disease")
+
+# Hide unused subplots, if any
+for ax in axes[len(macroregions):]:
+    ax.axis("off")
 
 plt.tight_layout()
 
@@ -85,11 +96,11 @@ plt.tight_layout()
 charts_dir = Path("charts")
 charts_dir.mkdir(exist_ok=True)
 
-output_path = charts_dir / "top_10_diseases_by_university_tier.png"
+output_path = charts_dir / "top_10_diseases_by_macroregion.png"
 
 counter = 1
 while output_path.exists():
-    output_path = charts_dir / f"top_10_diseases_by_university_tier_{counter}.png"
+    output_path = charts_dir / f"top_10_diseases_by_macroregion_{counter}.png"
     counter += 1
 
 plt.savefig(output_path, dpi=300)
