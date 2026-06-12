@@ -105,24 +105,32 @@ top_keywords = (
 
 plot_data = long_keywords[long_keywords["keyword"].isin(top_keywords)].copy()
 
-# Keep keyword order by frequency.
-plot_data["keyword"] = pd.Categorical(
-    plot_data["keyword"],
-    categories=top_keywords,
-    ordered=True
+# Chart 1: box and whisker plot of H-index by top keywords
+boxplot_data = [
+    plot_data[plot_data["keyword"] == keyword][H_INDEX_COLUMN]
+    for keyword in top_keywords
+]
+
+plt.figure(figsize=(14, 8))
+
+plt.boxplot(
+    boxplot_data,
+    tick_labels=top_keywords,
+    patch_artist=True,
+    boxprops=dict(facecolor="#3A7CA5", color="#1F4E66"),
+    medianprops=dict(color="white", linewidth=2),
+    whiskerprops=dict(color="#1F4E66"),
+    capprops=dict(color="#1F4E66"),
+    flierprops=dict(
+        marker="o",
+        markerfacecolor="#D1495B",
+        markeredgecolor="#D1495B",
+        markersize=4,
+        alpha=0.6
+    )
 )
 
-# Chart 1: whisker / box plot of H-index by top keywords
-plt.figure(figsize=(14, 8))
-sns.boxplot(
-    data=plot_data,
-    x="keyword",
-    y=H_INDEX_COLUMN,
-    order=top_keywords,
-    color="#8fbcd4",
-    showfliers=True
-)
-plt.title("H-index Distribution Across the 10 Most Frequent Keywords")
+plt.title("H-index Distribution in 10 Most Frequent Keywords")
 plt.xlabel("Keyword")
 plt.ylabel("H-index")
 plt.xticks(rotation=45, ha="right")
