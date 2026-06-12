@@ -228,3 +228,4 @@ charts/
 
 # PyCharm debugger
 .pydevproject
+.DS_Store
