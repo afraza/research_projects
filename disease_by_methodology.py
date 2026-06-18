@@ -15,6 +15,7 @@ methodology_lookup_sheet = 0
 disease_column = "disease"
 methodology_code_column = "Methodology-code"
 methodology_name_column = "Methodology"
+excluded_diseases = {"COVID-19"}
 
 # -----------------------------
 # Helper function for numbered filenames
@@ -66,6 +67,8 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
 })
+
+df = df[~df[disease_column].isin(excluded_diseases)].copy()
 
 # -----------------------------
 # Clean Methodology-code in main data

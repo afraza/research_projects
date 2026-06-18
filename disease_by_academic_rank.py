@@ -15,6 +15,7 @@ academic_rank_lookup_sheet = 0
 disease_column = "disease"
 academic_rank_code_column = "Academic-rank-code"
 academic_rank_name_column = "Academic-rank"
+excluded_diseases = {"COVID-19"}
 
 # -----------------------------
 # Helper function for numbered filenames
@@ -64,6 +65,8 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
 })
+
+df = df[~df[disease_column].isin(excluded_diseases)].copy()
 
 # -----------------------------
 # Clean Academic-rank-code
