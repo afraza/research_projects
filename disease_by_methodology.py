@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from pathlib import Path
 import math
+import textwrap
 
 # -----------------------------
 # Settings
@@ -344,3 +345,104 @@ plt.savefig(coverage_output_path, dpi=300)
 plt.close()
 
 print(f"Methodology coverage chart saved to: {coverage_output_path}")
+
+# -----------------------------
+# Create grouped column charts:
+# Methodology counts inside each top disease
+# -----------------------------
+top_disease_methodology_data = df_top_methodologies[
+    df_top_methodologies[disease_column].isin(top_10_overall_diseases)
+].copy()
+
+methodology_palette = [
+    "#3A7CA5",
+    "#D1495B",
+    "#EDAE49",
+    "#00798C",
+    "#7A5195",
+    "#4D908E",
+    "#F3722C",
+    "#577590",
+    "#90BE6D",
+    "#B56576",
+]
+
+cols = 2
+rows = math.ceil(len(top_10_overall_diseases) / cols)
+fig, axes = plt.subplots(rows, cols, figsize=(22, rows * 7))
+axes = axes.flatten()
+
+for ax, disease in zip(axes, top_10_overall_diseases):
+    disease_data = top_disease_methodology_data[
+        top_disease_methodology_data[disease_column] == disease
+    ]
+
+    methodology_counts_for_disease = (
+        disease_data[methodology_code_column]
+        .value_counts()
+        .reindex(top_20_methodology_codes, fill_value=0)
+    )
+
+    methodology_names = [
+        code_to_methodology_name.get(code, f"Methodology Code {code}")
+        for code in methodology_counts_for_disease.index
+    ]
+
+    wrapped_methodology_names = [
+        "\n".join(textwrap.wrap(name, width=16)) for name in methodology_names
+    ]
+
+    colors = [
+        methodology_palette[index % len(methodology_palette)]
+        for index in range(len(methodology_counts_for_disease))
+    ]
+
+    bars = ax.bar(
+        range(len(methodology_counts_for_disease)),
+        methodology_counts_for_disease.values,
+        color=colors,
+        edgecolor="#263238",
+        linewidth=0.7
+    )
+
+    ax.set_title(f"Methodology Records - {disease}", pad=14)
+    ax.set_xlabel("Methodology")
+    ax.set_ylabel("Number of Records")
+    ax.set_xticks(range(len(wrapped_methodology_names)))
+    ax.set_xticklabels(wrapped_methodology_names, rotation=90, ha="center")
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.grid(axis="y", linestyle="--", alpha=0.35)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    max_count = methodology_counts_for_disease.max()
+    ax.set_ylim(0, max(max_count + 1, 1))
+
+    for bar in bars:
+        height = bar.get_height()
+        if height:
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                height,
+                int(height),
+                ha="center",
+                va="bottom",
+                fontsize=8
+            )
+
+for ax in axes[len(top_10_overall_diseases):]:
+    ax.axis("off")
+
+plt.tight_layout()
+
+disease_methodology_counts_output_path = get_numbered_path(
+    charts_dir / "disease_methodology_counts_for_each_top_10_disease.png"
+)
+
+plt.savefig(disease_methodology_counts_output_path, dpi=300)
+plt.close()
+
+print(
+    "Disease methodology counts chart saved to: "
+    f"{disease_methodology_counts_output_path}"
+)
