@@ -1,5 +1,10 @@
 import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from pathlib import Path
 import math
 
@@ -15,7 +20,6 @@ methodology_lookup_sheet = 0
 disease_column = "disease"
 methodology_code_column = "Methodology-code"
 methodology_name_column = "Methodology"
-excluded_diseases = {"COVID-19"}
 
 # -----------------------------
 # Helper function for numbered filenames
@@ -66,9 +70,10 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 # Preserve special disease names
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
+    "Cancer": "Cancer (general)",
 })
 
-df = df[~df[disease_column].isin(excluded_diseases)].copy()
+df = df[df[disease_column] != "COVID-19"].copy()
 
 # -----------------------------
 # Clean Methodology-code in main data
@@ -176,6 +181,7 @@ for ax, methodology_code in zip(axes, methodology_codes):
     ax.set_title(f"Top 10 Diseases - {methodology_name}")
     ax.set_xlabel("Number of Records")
     ax.set_ylabel("Disease")
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
 # Hide unused panels
 for ax in axes[len(methodology_codes):]:
@@ -190,10 +196,97 @@ charts_dir = Path("charts")
 charts_dir.mkdir(exist_ok=True)
 
 output_path = get_numbered_path(
-    charts_dir / "top_10_diseases_by_methodology.png"
+    charts_dir / "disease_top_10_diseases_by_methodology.png"
 )
 
 plt.savefig(output_path, dpi=300)
-plt.show()
+plt.close()
 
 print(f"\nChart saved to: {output_path}")
+
+# -----------------------------
+# Create pie chart:
+# Methodology distribution
+# -----------------------------
+methodology_labels = [
+    code_to_methodology_name.get(code, f"Unknown Methodology {code}")
+    for code in methodology_counts.index
+]
+
+plt.figure(figsize=(14, 14))
+plt.pie(
+    methodology_counts.values,
+    labels=methodology_labels,
+    autopct="%1.1f%%",
+    startangle=90,
+    counterclock=False,
+    labeldistance=1.16,
+    pctdistance=0.78,
+    rotatelabels=True,
+    textprops={"fontsize": 8}
+)
+plt.title("Methodology Share")
+plt.tight_layout()
+
+pie_output_path = get_numbered_path(
+    charts_dir / "disease_methodology_distribution_pie.png"
+)
+
+plt.savefig(pie_output_path, dpi=300)
+plt.close()
+
+print(f"Pie chart saved to: {pie_output_path}")
+
+# -----------------------------
+# Create heatmap chart:
+# Top diseases by methodology
+# -----------------------------
+top_10_overall_diseases = df[disease_column].value_counts().head(10).index
+df["Methodology-name"] = df[methodology_code_column].map(
+    lambda code: code_to_methodology_name.get(code, f"Methodology Code {code}")
+)
+
+methodology_heatmap_labels = [
+    code_to_methodology_name.get(code, f"Methodology Code {code}")
+    for code in methodology_codes
+]
+
+heatmap_data = pd.crosstab(
+    df["Methodology-name"],
+    df[disease_column]
+)
+
+heatmap_data = heatmap_data.reindex(
+    index=methodology_heatmap_labels,
+    columns=top_10_overall_diseases,
+    fill_value=0
+)
+
+fig, ax = plt.subplots(figsize=(16, 10))
+image = ax.imshow(heatmap_data.values, cmap="YlOrRd", aspect="auto")
+
+ax.set_title("Top Disease Counts by Methodology")
+ax.set_xlabel("Disease")
+ax.set_ylabel("Methodology")
+ax.set_xticks(range(len(heatmap_data.columns)))
+ax.set_xticklabels(heatmap_data.columns, rotation=45, ha="right")
+ax.set_yticks(range(len(heatmap_data.index)))
+ax.set_yticklabels(heatmap_data.index)
+
+for row in range(heatmap_data.shape[0]):
+    for col in range(heatmap_data.shape[1]):
+        value = heatmap_data.iat[row, col]
+        if value:
+            ax.text(col, row, int(value), ha="center", va="center", fontsize=8)
+
+fig.colorbar(image, ax=ax, label="Number of Records")
+plt.tight_layout()
+
+heatmap_output_path = get_numbered_path(
+    charts_dir / "disease_top_diseases_by_methodology_heatmap.png"
+)
+
+plt.savefig(heatmap_output_path, dpi=300)
+plt.close()
+
+print(f"Heatmap chart saved to: {heatmap_output_path}")

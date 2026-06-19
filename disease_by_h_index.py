@@ -1,4 +1,8 @@
 import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 from pathlib import Path
 
@@ -10,7 +14,6 @@ sheet_name = 0
 
 disease_column = "disease"
 h_index_column = "H-index"
-excluded_diseases = {"COVID-19"}
 
 # -----------------------------
 # Helper function for numbered filenames
@@ -61,9 +64,10 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 # Preserve special disease names
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
+    "Cancer": "Cancer (general)",
 })
 
-df = df[~df[disease_column].isin(excluded_diseases)].copy()
+df = df[df[disease_column] != "COVID-19"].copy()
 
 # -----------------------------
 # Clean H-index field
@@ -126,10 +130,10 @@ charts_dir = Path("charts")
 charts_dir.mkdir(exist_ok=True)
 
 output_path = get_numbered_path(
-    charts_dir / "h_index_boxplot_top_10_diseases.png"
+    charts_dir / "disease_h_index_boxplot_top_10_diseases.png"
 )
 
 plt.savefig(output_path, dpi=300)
-plt.show()
+plt.close()
 
 print(f"\nChart saved to: {output_path}")
