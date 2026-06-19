@@ -22,6 +22,23 @@ disease_column = "disease"
 methodology_code_column = "Methodology-code"
 methodology_name_column = "Methodology"
 
+BAR_COLORS = [
+    "#3A7CA5",
+    "#D1495B",
+    "#EDAE49",
+    "#00798C",
+    "#7A5195",
+    "#4D908E",
+    "#F3722C",
+    "#577590",
+    "#90BE6D",
+    "#B56576",
+]
+
+
+def get_bar_colors(count):
+    return [BAR_COLORS[index % len(BAR_COLORS)] for index in range(count)]
+
 # -----------------------------
 # Helper function for numbered filenames
 # -----------------------------
@@ -35,6 +52,36 @@ def get_numbered_path(path):
         if not new_path.exists():
             return new_path
         counter += 1
+
+
+def style_horizontal_bar_chart(ax):
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.grid(axis="x", linestyle="--", linewidth=0.7, alpha=0.35)
+    ax.set_axisbelow(True)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    for bar in ax.patches:
+        width = bar.get_width()
+        if width:
+            ax.text(
+                width,
+                bar.get_y() + bar.get_height() / 2,
+                int(width),
+                ha="left",
+                va="center",
+                fontsize=8
+            )
+
+    ax.margins(x=0.14)
+
+
+def style_vertical_bar_chart(ax):
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.grid(axis="y", linestyle="--", linewidth=0.7, alpha=0.35)
+    ax.set_axisbelow(True)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
 
 # -----------------------------
@@ -176,13 +223,15 @@ for ax, methodology_code in zip(axes, methodology_codes):
     top_10_diseases.sort_values().plot(
         kind="barh",
         ax=ax,
-        color="#3A7CA5"
+        color=get_bar_colors(len(top_10_diseases)),
+        edgecolor="#1F4E66",
+        linewidth=0.8
     )
 
     ax.set_title(f"Top 10 Diseases - {methodology_name}")
     ax.set_xlabel("Number of Records")
     ax.set_ylabel("Disease")
-    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    style_horizontal_bar_chart(ax)
 
 # Hide unused panels
 for ax in axes[len(methodology_codes):]:
@@ -315,13 +364,15 @@ fig, ax = plt.subplots(figsize=(14, 8))
 methodology_usage_by_disease.plot(
     kind="bar",
     ax=ax,
-    color="#3A7CA5"
+    color=get_bar_colors(len(methodology_usage_by_disease)),
+    edgecolor="#1F4E66",
+    linewidth=0.8
 )
 
 ax.set_title("Methodology Coverage in 10 Most Frequent Diseases")
 ax.set_xlabel("Disease")
 ax.set_ylabel("Number of Methodologies Used")
-ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+style_vertical_bar_chart(ax)
 ax.set_ylim(0, max(len(top_20_methodology_codes) + 1, 1))
 ax.set_xticklabels(methodology_usage_by_disease.index, rotation=45, ha="right")
 
@@ -354,18 +405,7 @@ top_disease_methodology_data = df_top_methodologies[
     df_top_methodologies[disease_column].isin(top_10_overall_diseases)
 ].copy()
 
-methodology_palette = [
-    "#3A7CA5",
-    "#D1495B",
-    "#EDAE49",
-    "#00798C",
-    "#7A5195",
-    "#4D908E",
-    "#F3722C",
-    "#577590",
-    "#90BE6D",
-    "#B56576",
-]
+methodology_palette = BAR_COLORS
 
 cols = 2
 rows = math.ceil(len(top_10_overall_diseases) / cols)
@@ -411,7 +451,8 @@ for ax, disease in zip(axes, top_10_overall_diseases):
     ax.set_xticks(range(len(wrapped_methodology_names)))
     ax.set_xticklabels(wrapped_methodology_names, rotation=90, ha="center")
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.grid(axis="y", linestyle="--", alpha=0.35)
+    ax.grid(axis="y", linestyle="--", linewidth=0.7, alpha=0.35)
+    ax.set_axisbelow(True)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 

@@ -18,6 +18,23 @@ disease_column = "disease"
 field_code_column = "field-of-study-code"
 field_name_column = "field-of-study"
 
+BAR_COLORS = [
+    "#3A7CA5",
+    "#D1495B",
+    "#EDAE49",
+    "#00798C",
+    "#7A5195",
+    "#4D908E",
+    "#F3722C",
+    "#577590",
+    "#90BE6D",
+    "#B56576",
+]
+
+
+def get_bar_colors(count):
+    return [BAR_COLORS[index % len(BAR_COLORS)] for index in range(count)]
+
 
 def get_numbered_path(path):
     if not path.exists():
@@ -29,6 +46,28 @@ def get_numbered_path(path):
         if not new_path.exists():
             return new_path
         counter += 1
+
+
+def style_horizontal_bar_chart(ax):
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.grid(axis="x", linestyle="--", linewidth=0.7, alpha=0.35)
+    ax.set_axisbelow(True)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    for bar in ax.patches:
+        width = bar.get_width()
+        if width:
+            ax.text(
+                width,
+                bar.get_y() + bar.get_height() / 2,
+                int(width),
+                ha="left",
+                va="center",
+                fontsize=8
+            )
+
+    ax.margins(x=0.14)
 
 
 df = pd.read_excel(excel_file, sheet_name=sheet_name)
@@ -127,13 +166,15 @@ for ax, field_code in zip(axes, field_codes):
     top_10_diseases.sort_values().plot(
         kind="barh",
         ax=ax,
-        color="#3A7CA5"
+        color=get_bar_colors(len(top_10_diseases)),
+        edgecolor="#1F4E66",
+        linewidth=0.8
     )
 
     ax.set_title(f"Top 10 Diseases - {field_name}")
     ax.set_xlabel("Number of Records")
     ax.set_ylabel("Disease")
-    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    style_horizontal_bar_chart(ax)
 
 for ax in axes[len(field_codes):]:
     ax.axis("off")

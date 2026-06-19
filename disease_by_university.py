@@ -21,6 +21,23 @@ university_code_column = "university-code"
 # It should have columns: university-code, university-name
 university_lookup_file = "university_lookup.xlsx"
 
+BAR_COLORS = [
+    "#3A7CA5",
+    "#D1495B",
+    "#EDAE49",
+    "#00798C",
+    "#7A5195",
+    "#4D908E",
+    "#F3722C",
+    "#577590",
+    "#90BE6D",
+    "#B56576",
+]
+
+
+def get_bar_colors(count):
+    return [BAR_COLORS[index % len(BAR_COLORS)] for index in range(count)]
+
 # -----------------------------
 # Helper functions
 # -----------------------------
@@ -45,6 +62,28 @@ def safe_filename(text):
     text = re.sub(r"[^\w\s-]", "", text)
     text = re.sub(r"\s+", "_", text)
     return text[:120]
+
+
+def style_horizontal_bar_chart(ax):
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.grid(axis="x", linestyle="--", linewidth=0.7, alpha=0.35)
+    ax.set_axisbelow(True)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    for bar in ax.patches:
+        width = bar.get_width()
+        if width:
+            ax.text(
+                width,
+                bar.get_y() + bar.get_height() / 2,
+                int(width),
+                ha="left",
+                va="center",
+                fontsize=9
+            )
+
+    ax.margins(x=0.14)
 
 
 # -----------------------------
@@ -147,15 +186,17 @@ for university_code in university_codes:
 
     plt.figure(figsize=(12, 7))
 
-    top_10.sort_values().plot(
+    ax = top_10.sort_values().plot(
         kind="barh",
-        color="#3A7CA5"
+        color=get_bar_colors(len(top_10)),
+        edgecolor="#1F4E66",
+        linewidth=0.8
     )
 
     plt.title(f"Top 10 Diseases - {university_name}")
     plt.xlabel("Number of Records")
     plt.ylabel("Disease")
-    plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+    style_horizontal_bar_chart(ax)
 
     plt.tight_layout()
 
