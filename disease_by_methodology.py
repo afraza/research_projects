@@ -290,3 +290,57 @@ plt.savefig(heatmap_output_path, dpi=300)
 plt.close()
 
 print(f"Heatmap chart saved to: {heatmap_output_path}")
+
+# -----------------------------
+# Create column chart:
+# Number of frequent methodologies used in each top disease
+# -----------------------------
+top_20_methodology_codes = methodology_counts.head(20).index
+
+df_top_methodologies = df[
+    df[methodology_code_column].isin(top_20_methodology_codes)
+].copy()
+
+methodology_usage_by_disease = (
+    df_top_methodologies[
+        df_top_methodologies[disease_column].isin(top_10_overall_diseases)
+    ]
+    .groupby(disease_column)[methodology_code_column]
+    .nunique()
+    .reindex(top_10_overall_diseases, fill_value=0)
+)
+
+fig, ax = plt.subplots(figsize=(14, 8))
+methodology_usage_by_disease.plot(
+    kind="bar",
+    ax=ax,
+    color="#3A7CA5"
+)
+
+ax.set_title("Methodology Coverage in 10 Most Frequent Diseases")
+ax.set_xlabel("Disease")
+ax.set_ylabel("Number of Methodologies Used")
+ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+ax.set_ylim(0, max(len(top_20_methodology_codes) + 1, 1))
+ax.set_xticklabels(methodology_usage_by_disease.index, rotation=45, ha="right")
+
+for bar in ax.patches:
+    height = bar.get_height()
+    ax.text(
+        bar.get_x() + bar.get_width() / 2,
+        height,
+        int(height),
+        ha="center",
+        va="bottom"
+    )
+
+plt.tight_layout()
+
+coverage_output_path = get_numbered_path(
+    charts_dir / "disease_methodology_coverage_in_top_10_diseases.png"
+)
+
+plt.savefig(coverage_output_path, dpi=300)
+plt.close()
+
+print(f"Methodology coverage chart saved to: {coverage_output_path}")
