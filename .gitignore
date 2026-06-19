@@ -179,6 +179,7 @@ __marimo__/
 *.xlsb
 *.xltx
 *.xltm
+*.pages
 
 # CSV / TSV (comment out if you want to track them)
 *.csv
