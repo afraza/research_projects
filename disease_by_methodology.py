@@ -225,8 +225,8 @@ plt.pie(
     rotatelabels=True,
     textprops={"fontsize": 8}
 )
-plt.title("Methodology Share")
-plt.tight_layout()
+plt.title("Methodology Share", y=1.08)
+plt.tight_layout(rect=[0, 0, 1, 0.94])
 
 pie_output_path = get_numbered_path(
     charts_dir / "disease_methodology_distribution_pie.png"
