@@ -66,6 +66,13 @@ def get_numbered_path(path):
             return new_path
         counter += 1
 
+
+def macroregion_sort_key(value):
+    try:
+        return float(value)
+    except ValueError:
+        return float("inf")
+
 # -----------------------------
 # Clean macroregion field
 # -----------------------------
@@ -78,7 +85,7 @@ df = df[
     & (~df[macroregion_column].isin({"0", "0.0"}))
 ].copy()
 
-macroregions = sorted(df[macroregion_column].unique())
+macroregions = sorted(df[macroregion_column].unique(), key=macroregion_sort_key)
 
 # -----------------------------
 # Create top 10 disease chart for each macroregion
@@ -130,7 +137,10 @@ print(f"Chart saved to: {output_path}")
 # -----------------------------
 # Create pie chart for macroregion distribution
 # -----------------------------
-macroregion_counts = df[macroregion_column].value_counts().sort_index()
+macroregion_counts = df[macroregion_column].value_counts().reindex(
+    macroregions,
+    fill_value=0
+)
 
 plt.figure(figsize=(10, 10))
 plt.pie(
