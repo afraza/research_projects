@@ -12,6 +12,7 @@ field_lookup_sheet = 0
 disease_column = "disease"
 field_code_column = "field-of-study-code"
 field_name_column = "field-of-study"
+excluded_diseases = {"COVID-19"}
 
 
 def get_numbered_path(path):
@@ -53,6 +54,8 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
 })
+
+df = df[~df[disease_column].isin(excluded_diseases)].copy()
 
 # Clean field-of-study-code in main data
 df[field_code_column] = df[field_code_column].astype(str).str.strip()

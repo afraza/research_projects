@@ -11,6 +11,7 @@ sheet_name = 0
 
 disease_column = "disease"
 university_code_column = "university-code"
+excluded_diseases = {"COVID-19"}
 
 # Optional: if you have a separate file with university codes and names
 # It should have columns: university-code, university-name
@@ -76,6 +77,8 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
 })
+
+df = df[~df[disease_column].isin(excluded_diseases)].copy()
 
 # -----------------------------
 # Clean university code field

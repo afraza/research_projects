@@ -10,6 +10,7 @@ sheet_name = 0
 
 disease_column = "disease"
 h_index_column = "H-index"
+excluded_diseases = {"COVID-19"}
 
 # -----------------------------
 # Helper function for numbered filenames
@@ -61,6 +62,8 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
 })
+
+df = df[~df[disease_column].isin(excluded_diseases)].copy()
 
 # -----------------------------
 # Clean H-index field

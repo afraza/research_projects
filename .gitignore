@@ -112,6 +112,7 @@ ipython_config.py
 .env
 .envrc
 .venv
+.run/
 env/
 venv/
 ENV/

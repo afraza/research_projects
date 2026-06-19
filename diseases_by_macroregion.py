@@ -10,6 +10,7 @@ excel_file = "scientific_projects_iran.xlsx"  # change this
 sheet_name = 0
 disease_column = "disease"
 macroregion_column = "macroregion"
+excluded_diseases = {"COVID-19"}
 
 # -----------------------------
 # Load data
@@ -45,6 +46,8 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
 })
+
+df = df[~df[disease_column].isin(excluded_diseases)].copy()
 
 # -----------------------------
 # Clean macroregion field

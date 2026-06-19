@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 excel_file = "scientific_projects_iran.xlsx"  # change to your Excel file name
 sheet_name = 0  # or use the sheet name, e.g. "Sheet1"
 disease_column = "disease"
+excluded_diseases = {"COVID-19"}
 
 # -----------------------------
 # Load data
@@ -43,6 +44,8 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
 })
+
+df = df[~df[disease_column].isin(excluded_diseases)].copy()
 
 # -----------------------------
 # Count top 15 diseases
