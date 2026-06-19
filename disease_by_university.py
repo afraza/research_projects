@@ -1,5 +1,10 @@
 import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from pathlib import Path
 import re
 
@@ -11,7 +16,6 @@ sheet_name = 0
 
 disease_column = "disease"
 university_code_column = "university-code"
-excluded_diseases = {"COVID-19"}
 
 # Optional: if you have a separate file with university codes and names
 # It should have columns: university-code, university-name
@@ -76,9 +80,10 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 # Preserve special disease names
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
+    "Cancer": "Cancer (general)",
 })
 
-df = df[~df[disease_column].isin(excluded_diseases)].copy()
+df = df[df[disease_column] != "COVID-19"].copy()
 
 # -----------------------------
 # Clean university code field
@@ -119,7 +124,7 @@ except FileNotFoundError:
 # -----------------------------
 # Create charts folder
 # -----------------------------
-charts_dir = Path("charts") / "universities"
+charts_dir = Path("charts") / "disease_universities"
 charts_dir.mkdir(parents=True, exist_ok=True)
 
 # -----------------------------
@@ -150,13 +155,92 @@ for university_code in university_codes:
     plt.title(f"Top 10 Diseases - {university_name}")
     plt.xlabel("Number of Records")
     plt.ylabel("Disease")
+    plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
 
     plt.tight_layout()
 
-    filename = f"top_10_diseases_university_{university_code}_{safe_filename(university_name)}.png"
+    filename = f"disease_top_10_diseases_university_{university_code}_{safe_filename(university_name)}.png"
     output_path = get_numbered_path(charts_dir / filename)
 
     plt.savefig(output_path, dpi=300)
     plt.close()
 
     print(f"Saved: {output_path}")
+
+    plt.figure(figsize=(10, 10))
+    ax = top_10.plot(
+        kind="pie",
+        autopct="%1.1f%%",
+        startangle=90,
+        counterclock=False
+    )
+    ax.set_ylabel("")
+
+    plt.title(f"Disease Share Among Top 10 Diseases - {university_name}")
+    plt.tight_layout()
+
+    pie_filename = f"disease_top_10_diseases_university_{university_code}_{safe_filename(university_name)}_pie.png"
+    pie_output_path = get_numbered_path(charts_dir / pie_filename)
+
+    plt.savefig(pie_output_path, dpi=300)
+    plt.close()
+
+    print(f"Saved pie chart: {pie_output_path}")
+
+top_20_university_codes = df[university_code_column].value_counts().head(20).index
+top_20_diseases = df[disease_column].value_counts().head(20).index
+
+df_top_universities = df[
+    df[university_code_column].isin(top_20_university_codes)
+].copy()
+
+df_top_universities["university-label"] = df_top_universities[
+    university_code_column
+].map(
+    lambda code: code_to_name.get(code, f"University Code {code}")
+)
+
+top_20_university_labels = [
+    code_to_name.get(code, f"University Code {code}")
+    for code in top_20_university_codes
+]
+
+heatmap_data = pd.crosstab(
+    df_top_universities["university-label"],
+    df_top_universities[disease_column]
+)
+
+heatmap_data = heatmap_data.reindex(
+    index=top_20_university_labels,
+    columns=top_20_diseases,
+    fill_value=0
+)
+
+fig, ax = plt.subplots(figsize=(20, 14))
+image = ax.imshow(heatmap_data.values, cmap="YlOrRd", aspect="auto")
+
+ax.set_title("20 Most Frequent Diseases by 20 Most Prolific Universities")
+ax.set_xlabel("Disease")
+ax.set_ylabel("University")
+ax.set_xticks(range(len(heatmap_data.columns)))
+ax.set_xticklabels(heatmap_data.columns, rotation=45, ha="right")
+ax.set_yticks(range(len(heatmap_data.index)))
+ax.set_yticklabels(heatmap_data.index)
+
+for row in range(heatmap_data.shape[0]):
+    for col in range(heatmap_data.shape[1]):
+        value = heatmap_data.iat[row, col]
+        if value:
+            ax.text(col, row, int(value), ha="center", va="center", fontsize=7)
+
+fig.colorbar(image, ax=ax, label="Number of Records")
+plt.tight_layout()
+
+heatmap_output_path = get_numbered_path(
+    charts_dir / "disease_top_20_diseases_by_top_20_universities_heatmap.png"
+)
+
+plt.savefig(heatmap_output_path, dpi=300)
+plt.close()
+
+print(f"Saved heatmap chart: {heatmap_output_path}")

@@ -112,7 +112,6 @@ ipython_config.py
 .env
 .envrc
 .venv
-.run/
 env/
 venv/
 ENV/
@@ -183,6 +182,9 @@ __marimo__/
 # CSV / TSV (comment out if you want to track them)
 *.csv
 *.tsv
+
+# Apple Pages documents
+*.pages
 
 # Databases
 *.db

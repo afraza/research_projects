@@ -1,5 +1,10 @@
 import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from pathlib import Path
 import math
 
@@ -12,7 +17,6 @@ field_lookup_sheet = 0
 disease_column = "disease"
 field_code_column = "field-of-study-code"
 field_name_column = "field-of-study"
-excluded_diseases = {"COVID-19"}
 
 
 def get_numbered_path(path):
@@ -53,9 +57,10 @@ df = df[
 df[disease_column] = df[disease_column].str.lower().str.title()
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
+    "Cancer": "Cancer (general)",
 })
 
-df = df[~df[disease_column].isin(excluded_diseases)].copy()
+df = df[df[disease_column] != "COVID-19"].copy()
 
 # Clean field-of-study-code in main data
 df[field_code_column] = df[field_code_column].astype(str).str.strip()
@@ -128,6 +133,7 @@ for ax, field_code in zip(axes, field_codes):
     ax.set_title(f"Top 10 Diseases - {field_name}")
     ax.set_xlabel("Number of Records")
     ax.set_ylabel("Disease")
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
 for ax in axes[len(field_codes):]:
     ax.axis("off")
@@ -138,10 +144,83 @@ charts_dir = Path("charts")
 charts_dir.mkdir(exist_ok=True)
 
 output_path = get_numbered_path(
-    charts_dir / "top_10_diseases_in_top_20_field_of_studies.png"
+    charts_dir / "disease_top_10_diseases_in_top_20_field_of_studies.png"
 )
 
 plt.savefig(output_path, dpi=300)
-plt.show()
+plt.close()
 
 print(f"\nChart saved to: {output_path}")
+
+# Create pie chart for the field-of-study distribution.
+field_labels = [
+    code_to_field_name.get(code, f"Unknown field name for code {code}")
+    for code in top_20_field_codes.index
+]
+
+plt.figure(figsize=(12, 12))
+plt.pie(
+    top_20_field_codes.values,
+    labels=field_labels,
+    autopct="%1.1f%%",
+    startangle=90,
+    counterclock=False
+)
+plt.title("Field-of-study Share Among Top 20 Field Codes")
+plt.tight_layout()
+
+pie_output_path = get_numbered_path(
+    charts_dir / "disease_top_20_field_of_studies_pie.png"
+)
+
+plt.savefig(pie_output_path, dpi=300)
+plt.close()
+
+print(f"Pie chart saved to: {pie_output_path}")
+
+# Create heatmap of top diseases across the top field-of-study codes.
+top_10_overall_diseases = df[disease_column].value_counts().head(10).index
+df_top_fields = df[df[field_code_column].isin(field_codes)].copy()
+df_top_fields["Field-of-study"] = df_top_fields[field_code_column].map(
+    lambda code: code_to_field_name.get(code, f"Field of Study Code {code}")
+)
+
+heatmap_data = pd.crosstab(
+    df_top_fields["Field-of-study"],
+    df_top_fields[disease_column]
+)
+
+heatmap_data = heatmap_data.reindex(
+    index=field_labels,
+    columns=top_10_overall_diseases,
+    fill_value=0
+)
+
+fig, ax = plt.subplots(figsize=(16, 12))
+image = ax.imshow(heatmap_data.values, cmap="YlOrRd", aspect="auto")
+
+ax.set_title("Top Disease Counts by Field-of-study")
+ax.set_xlabel("Disease")
+ax.set_ylabel("Field-of-study")
+ax.set_xticks(range(len(heatmap_data.columns)))
+ax.set_xticklabels(heatmap_data.columns, rotation=45, ha="right")
+ax.set_yticks(range(len(heatmap_data.index)))
+ax.set_yticklabels(heatmap_data.index)
+
+for row in range(heatmap_data.shape[0]):
+    for col in range(heatmap_data.shape[1]):
+        value = heatmap_data.iat[row, col]
+        if value:
+            ax.text(col, row, int(value), ha="center", va="center", fontsize=7)
+
+fig.colorbar(image, ax=ax, label="Number of Records")
+plt.tight_layout()
+
+heatmap_output_path = get_numbered_path(
+    charts_dir / "disease_top_diseases_by_field_of_study_heatmap.png"
+)
+
+plt.savefig(heatmap_output_path, dpi=300)
+plt.close()
+
+print(f"Heatmap chart saved to: {heatmap_output_path}")

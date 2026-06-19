@@ -1,5 +1,10 @@
 import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from pathlib import Path
 import math
 
@@ -15,7 +20,6 @@ academic_rank_lookup_sheet = 0
 disease_column = "disease"
 academic_rank_code_column = "Academic-rank-code"
 academic_rank_name_column = "Academic-rank"
-excluded_diseases = {"COVID-19"}
 
 # -----------------------------
 # Helper function for numbered filenames
@@ -64,9 +68,10 @@ df[disease_column] = df[disease_column].str.lower().str.title()
 
 df[disease_column] = df[disease_column].replace({
     "Covid-19": "COVID-19",
+    "Cancer": "Cancer (general)",
 })
 
-df = df[~df[disease_column].isin(excluded_diseases)].copy()
+df = df[df[disease_column] != "COVID-19"].copy()
 
 # -----------------------------
 # Clean Academic-rank-code
@@ -177,6 +182,7 @@ rank_by_disease.plot(
 plt.title("Academic-rank Distribution in 10 Most Frequent Diseases")
 plt.xlabel("Disease")
 plt.ylabel("Number of Records")
+plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
 plt.xticks(rotation=45, ha="right")
 plt.legend(title="Academic-rank", bbox_to_anchor=(1.02, 1), loc="upper left")
 plt.tight_layout()
@@ -185,11 +191,11 @@ charts_dir = Path("charts")
 charts_dir.mkdir(exist_ok=True)
 
 output_path_1 = get_numbered_path(
-    charts_dir / "academic_rank_distribution_in_top_10_diseases.png"
+    charts_dir / "disease_academic_rank_distribution_in_top_10_diseases.png"
 )
 
 plt.savefig(output_path_1, dpi=300)
-plt.show()
+plt.close()
 
 print(f"Chart saved to: {output_path_1}")
 
@@ -219,6 +225,7 @@ for ax, academic_rank in zip(axes, academic_ranks):
     ax.set_title(f"Top 10 Diseases - {academic_rank}")
     ax.set_xlabel("Number of Records")
     ax.set_ylabel("Disease")
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
 for ax in axes[len(academic_ranks):]:
     ax.axis("off")
@@ -226,10 +233,72 @@ for ax in axes[len(academic_ranks):]:
 plt.tight_layout()
 
 output_path_2 = get_numbered_path(
-    charts_dir / "top_10_diseases_by_academic_rank.png"
+    charts_dir / "disease_top_10_diseases_by_academic_rank.png"
 )
 
 plt.savefig(output_path_2, dpi=300)
-plt.show()
+plt.close()
 
 print(f"Chart saved to: {output_path_2}")
+
+# -----------------------------
+# Chart 3:
+# Disease share among top 10 diseases
+# -----------------------------
+top_10_disease_counts = df_top_diseases[disease_column].value_counts().loc[
+    top_10_diseases
+]
+
+plt.figure(figsize=(10, 10))
+ax = top_10_disease_counts.plot(
+    kind="pie",
+    autopct="%1.1f%%",
+    startangle=90,
+    counterclock=False
+)
+ax.set_ylabel("")
+
+plt.title("Disease Share Among 10 Most Frequent Diseases")
+plt.tight_layout()
+
+output_path_3 = get_numbered_path(
+    charts_dir / "disease_academic_rank_top_10_diseases_pie.png"
+)
+
+plt.savefig(output_path_3, dpi=300)
+plt.close()
+
+print(f"Pie chart saved to: {output_path_3}")
+
+# -----------------------------
+# Chart 4:
+# Academic-rank heatmap in each top 10 disease
+# -----------------------------
+fig, ax = plt.subplots(figsize=(12, 8))
+image = ax.imshow(rank_by_disease.values, cmap="YlOrRd", aspect="auto")
+
+ax.set_title("Academic-rank Counts in 10 Most Frequent Diseases")
+ax.set_xlabel("Academic-rank")
+ax.set_ylabel("Disease")
+ax.set_xticks(range(len(rank_by_disease.columns)))
+ax.set_xticklabels(rank_by_disease.columns, rotation=45, ha="right")
+ax.set_yticks(range(len(rank_by_disease.index)))
+ax.set_yticklabels(rank_by_disease.index)
+
+for row in range(rank_by_disease.shape[0]):
+    for col in range(rank_by_disease.shape[1]):
+        value = rank_by_disease.iat[row, col]
+        if value:
+            ax.text(col, row, int(value), ha="center", va="center")
+
+fig.colorbar(image, ax=ax, label="Number of Records")
+plt.tight_layout()
+
+output_path_4 = get_numbered_path(
+    charts_dir / "disease_academic_rank_top_10_diseases_heatmap.png"
+)
+
+plt.savefig(output_path_4, dpi=300)
+plt.close()
+
+print(f"Heatmap chart saved to: {output_path_4}")
